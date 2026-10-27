@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Тестовая страница — ЛР4</title>
+  <!--
+    Учебная страница для ЛР № 4 (iOS, VoiceOver), на основе test.html из ЛР № 1.
+    НАМЕРЕННЫЕ БАРЬЕРЫ: Б1 — кнопка-иконка поиска без доступного имени; Б2 — поле поиска без программно связанной подписи.
+    Журнал внизу страницы записывает DOM-события (focusin, input, change, открытие и закрытие диалога).
+    Это события страницы, а не журнал фокуса VoiceOver.
+  -->
+  <style>
+    body { font-family: -apple-system, Segoe UI, Arial, sans-serif; max-width: 640px; margin: 1rem auto; padding: 0 1rem; line-height: 1.5; color: #1a1a1a; }
+    h1 { font-size: 1.5rem; }
+    section { border: 1px solid #ccc; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .search-row { display: flex; gap: .5rem; align-items: center; }
+    .search-row input { flex: 1; padding: .5rem; font-size: 1rem; }
+    button { font-size: 1rem; padding: .5rem .9rem; cursor: pointer; }
+    .icon-btn { padding: .5rem; line-height: 0; }
+    .hint { color: #555; font-size: .9rem; margin: 0 0 .3rem; }
+    dialog { border-radius: 8px; border: 1px solid #888; max-width: 320px; }
+    dialog::backdrop { background: rgba(0,0,0,.4); }
+    output { font-weight: bold; }
+    #log { font-family: ui-monospace, Menlo, monospace; font-size: .8rem; background: #f4f4f4; padding: .5rem .5rem .5rem 2rem; max-height: 14rem; overflow: auto; }
+    .card { border-top: 1px solid #eee; padding: .5rem 0; }
+  </style>
+</head>
+<body>
+  <h1>Каталог наушников</h1>
+
+  <section>
+    <h2>Поиск</h2>
+    <div class="hint">Поиск по каталогу</div>
+    <div class="search-row">
+      <input type="text" id="query">
+      <button type="button" id="search-btn" class="icon-btn">
+        <svg aria-hidden="true" focusable="false" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="16.5" y1="16.5" x2="22" y2="22"></line>
+        </svg>
+      </button>
+    </div>
+    <p id="search-result" aria-live="polite"></p>
+  </section>
+
+  <section>
+    <h2>Фильтры</h2>
+    <p>
+      <input type="checkbox" id="wireless">
+      <label for="wireless">Только беспроводные</label>
+    </p>
+    <p>
+      <label for="price">Максимальная цена, ₽</label><br>
+      <input type="range" id="price" min="0" max="20000" step="500" value="5000">
+      <output id="price-value" for="price">5000</output>
+    </p>
+  </section>
+
+  <section>
+    <h2>Заказ</h2>
+    <button type="button" id="open-dialog">Оформить заказ</button>
+  </section>
+
+  <dialog id="order-dialog" aria-labelledby="dialog-title">
+    <h2 id="dialog-title">Подтверждение заказа</h2>
+    <p>Оформить заказ на выбранные товары?</p>
+    <button type="button" id="confirm">Подтвердить</button>
+    <button type="button" id="close-dialog">Отмена</button>
+  </dialog>
+
+  <section>
+    <h2>Товары</h2>
+    <div class="card">Наушники беспроводные A9, 1 493 ₽</div>
+    <div class="card">Xiaomi Redmi Buds 8 Active, 1 633 ₽</div>
+    <div class="card">Xiaomi Redmi Buds 8 Lite, 1 970 ₽</div>
+    <div class="card">Borofone BO105, проводные, 1 921 ₽</div>
+    <div class="card">Наушники Ai4 для iOS и Android, 2 959 ₽</div>
+    <div class="card">Commo One 2.0, накладные, 3 490 ₽</div>
+    <div class="card">Marshall Major V, 9 990 ₽</div>
+    <div class="card">Fifine H9, игровые, 4 200 ₽</div>
+  </section>
+
+  <section>
+    <h2>Журнал событий страницы</h2>
+    <ol id="log"></ol>
+  </section>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const t0 = Date.now();
+    function desc(el) {
+      if (!el || !el.tagName) return String(el);
+      let s = el.tagName.toLowerCase();
+      if (el.id) s += '#' + el.id;
+      return s;
+    }
+    function log(msg) {
+      const li = document.createElement('li');
+      li.textContent = ((Date.now() - t0) / 1000).toFixed(1) + ' с — ' + msg;
+      logEl.appendChild(li);
+    }
+    document.addEventListener('focusin', e => log('focusin: ' + desc(e.target)));
+    document.addEventListener('input', e => log('input: ' + desc(e.target) + ' = «' + e.target.value + '»'));
+    document.addEventListener('change', e => log('change: ' + desc(e.target) + (e.target.type === 'checkbox' ? ' checked=' + e.target.checked : ' = ' + e.target.value)));
+
+    const query = document.getElementById('query');
+    const result = document.getElementById('search-result');
+    document.getElementById('search-btn').addEventListener('click', () => {
+      log('click: button#search-btn');
+      result.textContent = query.value.trim()
+        ? 'Найдено 3 товара по запросу «' + query.value.trim() + '»'
+        : 'Введите запрос';
+    });
+    query.addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('search-btn').click();
+    });
+
+    const price = document.getElementById('price');
+    const priceValue = document.getElementById('price-value');
+    price.addEventListener('input', () => { priceValue.textContent = price.value; });
+
+    const dialog = document.getElementById('order-dialog');
+    const opener = document.getElementById('open-dialog');
+    opener.addEventListener('click', () => { dialog.showModal(); log('dialog open, активный элемент: ' + desc(document.activeElement)); });
+    document.getElementById('close-dialog').addEventListener('click', () => dialog.close());
+    document.getElementById('confirm').addEventListener('click', () => { dialog.close(); result.textContent = 'Заказ оформлен'; });
+    dialog.addEventListener('close', () => setTimeout(() => log('dialog close, активный элемент: ' + desc(document.activeElement)), 0));
+  </script>
+</body>
+</html>
